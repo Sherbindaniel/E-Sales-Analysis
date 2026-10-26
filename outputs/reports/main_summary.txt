@@ -1,0 +1,21 @@
+======================================================================
+STATISTICAL MODELING SUMMARY REPORT
+======================================================================
+1. Dataset Ingestion Results:
+   - Primary (E-Commerce Logs): 172838 cleaned events.
+   - Secondary (Web Server Logs): 5000 cleaned access records.
+
+2. Dispersion Properties (Requests/min):
+   - E-Commerce All Traffic: Mean=16.5284, Variance=221.6805, Dispersion=13.4121 (Overdispersed: True)
+   - Web Server All Traffic: Mean=0.0950, Variance=0.1005, Dispersion=1.0574 (Overdispersed: True)
+
+3. Distribution Fit Assessment (AIC Rank):
+   - E-Commerce All Traffic: Best model = Log-Normal (AIC: 78824.03, KS/Chi2 p-value: 5.7884e-38)
+   - E-Commerce Peak Traffic: Best model = Gamma (AIC: 1082.39, KS/Chi2 p-value: 1.6086e-142)
+
+4. Capacity Planning Insights (P(Requests > T)):
+   - Under standard Poisson assumptions, the probability of exceeding 100 requests/minute is estimated as 9.2369e-45.
+   - Under the overdispersed Negative Binomial model, the probability is 2.7321e-04.
+   - Actual observed empirical frequency of exceeding 100 requests/minute is 4.3033e-03.
+   - The Negative Binomial and Log-Normal models provide orders of magnitude better predictions for tail risk than the Poisson model.
+======================================================================

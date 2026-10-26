@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrafficStat · SRE Capacity & Traffic Analysis Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body>
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">TrafficStat</div>
+      <div class="brand-sub">SRE · DS Platform</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Analysis</div>
+    <a class="nav-item active" href="#sec-pipeline" onclick="setNav(this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Pipeline Control
+    </a>
+    <a class="nav-item" href="#sec-capacity" onclick="setNav(this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Capacity Report
+    </a>
+    <a class="nav-item" href="#sec-anomaly" onclick="setNav(this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Anomaly Log
+    </a>
+    <a class="nav-item" href="#sec-survival" onclick="setNav(this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Survival Probabilities
+    </a>
+
+    <div class="nav-group-label" style="margin-top:8px">Statistics</div>
+    <a class="nav-item" href="#sec-ingestion" onclick="setNav(this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Data Ingestion
+    </a>
+    <a class="nav-item" href="#sec-eda" onclick="setNav(this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      EDA &amp; Regimes
+    </a>
+    <a class="nav-item" href="#sec-dispersion" onclick="setNav(this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Dispersion Analysis
+    </a>
+    <a class="nav-item" href="#sec-dist" onclick="setNav(this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20M5 20V10l7-7 7 7v10"/></svg>
+      Distribution Fitting
+    </a>
+    <a class="nav-item" href="#sec-charts" onclick="setNav(this)">
+      <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Diagnostic Charts
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="status-row">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Ready</span>
+    </div>
+    <div class="sidebar-ver">Flask · Python 3.12</div>
+  </div>
+</aside>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<div class="layout" id="main">
+
+  <header class="topbar">
+    <div class="tb-left">
+      <button class="menu-btn" id="hamburger">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="tb-title">Statistical Traffic Modeling &amp; SRE Capacity Planning Platform</span>
+    </div>
+    <div class="tb-right">
+      <button class="export-btn" id="export-btn" onclick="exportCSV()" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+      <div class="tb-time" id="tb-time">—</div>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ══ PIPELINE CONTROL ══ -->
+    <section id="sec-pipeline" class="section">
+      <div class="sec-hdr">
+        <div>
+          <h2 class="sec-title">Pipeline Control</h2>
+          <p class="sec-sub">Configure your infrastructure parameters and data source, then run the full analysis</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <!-- Server config inputs -->
+        <div class="config-grid">
+          <div class="config-field">
+            <label class="cfg-label">Server Capacity <span class="cfg-unit">(req/min per server)</span></label>
+            <input class="cfg-input" type="number" id="server-capacity" value="100" min="1" max="100000"/>
+            <p class="cfg-hint">Max requests per minute a single server can handle before degrading</p>
+          </div>
+          <div class="config-field">
+            <label class="cfg-label">Number of Servers</label>
+            <input class="cfg-input" type="number" id="num-servers" value="2" min="1" max="1000"/>
+            <p class="cfg-hint">Current server count in your fleet</p>
+          </div>
+          <div class="config-field">
+            <label class="cfg-label">Primary Dataset for Capacity Analysis</label>
+            <select class="cfg-input" id="dataset-choice">
+              <option value="ec">E-Commerce Logs (Primary)</option>
+              <option value="ws">Web Server Logs (Secondary)</option>
+            </select>
+            <p class="cfg-hint">Which dataset to use for capacity planning calculations</p>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Data source tabs -->
+        <div class="tab-row">
+          <button class="tab active" id="tab-default" onclick="switchTab('default')">Use Default Dataset</button>
+          <button class="tab" id="tab-custom" onclick="switchTab('custom')">Upload Custom Files</button>
+        </div>
+
+        <div id="panel-default" class="tab-panel active">
+          <div class="info-banner">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div>
+              <strong>Default datasets pre-loaded:</strong>
+              <span class="info-items">E-Commerce Logs (172,838 events · 7-day flash-sale) &nbsp;·&nbsp; Web Server Access Logs (5,000 records · 36-day baseline) &nbsp;·&nbsp; Server Metadata (auto-joined)</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="panel-custom" class="tab-panel">
+          <div class="upload-grid">
+            <div class="upload-zone" id="drop-ec" onclick="document.getElementById('file-ec').click()">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="uz-icon"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <div class="uz-title">E-Commerce Log CSV</div>
+              <div class="uz-hint">Drag &amp; drop or click to browse</div>
+              <div class="uz-cols">Required columns: <code>ip</code>, <code>accessed_date</code>, <code>sales</code>, <code>duration_(secs)</code>, <code>bytes</code></div>
+              <input type="file" id="file-ec" accept=".csv" hidden/>
+              <div class="uz-name" id="name-ec"></div>
+            </div>
+            <div class="upload-zone" id="drop-ws" onclick="document.getElementById('file-ws').click()">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="uz-icon"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>
+              <div class="uz-title">Web Server Access Log CSV</div>
+              <div class="uz-hint">Drag &amp; drop or click to browse</div>
+              <div class="uz-cols">Required columns: <code>ip_address</code>, <code>timestamp</code>, <code>status_code</code>, <code>response_time_ms</code>, <code>bytes_sent</code></div>
+              <input type="file" id="file-ws" accept=".csv" hidden/>
+              <div class="uz-name" id="name-ws"></div>
+            </div>
+            <div class="upload-zone" id="drop-srv" onclick="document.getElementById('file-srv').click()">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="uz-icon"><rect x="2" y="2" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/></svg>
+              <div class="uz-title">Servers Metadata CSV</div>
+              <div class="uz-hint">Drag &amp; drop or click to browse</div>
+              <div class="uz-cols">Required columns: <code>server_id</code>, <code>name</code>, <code>region</code>, <code>role</code></div>
+              <input type="file" id="file-srv" accept=".csv" hidden/>
+              <div class="uz-name" id="name-srv"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <button class="run-btn" id="run-btn" onclick="runPipeline()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Run Analysis
+          </button>
+          <span class="run-hint">~60–90 sec · All stages run automatically</span>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-card" id="progress-wrap" style="display:none">
+        <div class="prog-header">
+          <div class="prog-left">
+            <div class="spinner" id="spinner"></div>
+            <span id="progress-msg">Initialising…</span>
+          </div>
+          <span class="prog-pct" id="progress-pct">0%</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="progress-bar" style="width:0%"></div></div>
+        <div class="prog-log" id="progress-steps"></div>
+      </div>
+
+      <div class="alert-error" id="error-box" style="display:none"></div>
+    </section>
+
+    <!-- ══ RESULTS ══ -->
+    <div id="results-container">
+
+      <!-- ══ CAPACITY REPORT ══ -->
+      <section id="sec-capacity" class="section">
+        <div class="sec-hdr">
+          <div>
+            <h2 class="sec-title">Capacity Planning Report</h2>
+            <p class="sec-sub">How your current infrastructure handles observed traffic — utilization, bottleneck range, risk level, and recommended actions</p>
+          </div>
+          <div id="risk-badge-top"></div>
+        </div>
+        <div id="placeholder-capacity" class="placeholder-state">
+          <div class="ph-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div class="ph-title">No analysis run yet</div>
+          <div class="ph-sub">Configure your server parameters above and click <strong>Run Analysis</strong> to generate the capacity report.</div>
+        </div>
+        <!-- Risk + headline KPIs -->
+        <div id="cap-kpi-row" class="kpi-row"></div>
+
+        <!-- Utilization gauge row -->
+        <div class="card" style="margin-top:14px">
+          <div class="card-hdr">
+            <span class="card-hdr-title">Traffic vs Capacity — Percentile Breakdown</span>
+            <span class="card-hdr-sub">How much of your total capacity is consumed at each traffic percentile</span>
+          </div>
+          <div class="table-wrap" id="tbl-percentile"></div>
+        </div>
+
+        <!-- Bottleneck + uptime -->
+        <div class="two-col" style="margin-top:14px">
+          <div class="card">
+            <div class="card-hdr"><span class="card-hdr-title">Bottleneck Analysis</span></div>
+            <div id="bottleneck-panel" class="info-panel"></div>
+          </div>
+          <div class="card">
+            <div class="card-hdr"><span class="card-hdr-title">Uptime &amp; Overload Frequency</span></div>
+            <div id="uptime-panel" class="info-panel"></div>
+          </div>
+        </div>
+
+        <!-- Recommended actions -->
+        <div class="card" style="margin-top:14px">
+          <div class="card-hdr">
+            <span class="card-hdr-title">Recommended Actions</span>
+            <span class="card-hdr-sub">Prioritised engineering measures based on your traffic profile</span>
+          </div>
+          <div id="measures-list"></div>
+        </div>
+      </section>
+
+      <!-- ══ ANOMALY LOG ══ -->
+      <section id="sec-anomaly" class="section">
+        <div class="sec-hdr">
+          <div>
+            <h2 class="sec-title">Anomaly Detection Log</h2>
+            <p class="sec-sub">Every minute where traffic was statistically anomalous — timestamp, magnitude, severity, and detection method</p>
+          </div>
+        </div>
+        <div id="placeholder-anomaly" class="placeholder-state">
+          <div class="ph-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+          <div class="ph-title">No analysis run yet</div>
+          <div class="ph-sub">Run the pipeline to detect anomalous traffic events with timestamps and severity classification.</div>
+        </div>
+        <div id="anomaly-summary-row" class="kpi-row"></div>
+        <div class="card" style="margin-top:14px">
+          <div class="card-hdr">
+            <span class="card-hdr-title">Top 50 Anomalous Traffic Events</span>
+            <span class="card-hdr-sub">Sorted by magnitude. Z-Score &gt; 3σ or IQR outlier.</span>
+          </div>
+          <div class="table-wrap" id="tbl-anomaly-log"></div>
+        </div>
+      </section>
+
+      <!-- ══ SURVIVAL PROBABILITIES ══ -->
+      <section id="sec-survival" class="section">
+        <div class="sec-hdr">
+          <div>
+            <h2 class="sec-title">Survival Probabilities &amp; Tail Risk</h2>
+            <p class="sec-sub">P(X &gt; T) — probability of exceeding a capacity threshold. Empirical benchmark vs. three fitted models. Use Log-Normal or Neg-Binomial for provisioning — never Poisson.</p>
+          </div>
+        </div>
+        <div id="placeholder-survival" class="placeholder-state">
+          <div class="ph-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+          <div class="ph-title">No analysis run yet</div>
+          <div class="ph-sub">Run the pipeline to compute P(X &gt; T) exceedance probabilities under Poisson, Negative Binomial, and Log-Normal models.</div>
+        </div>
+        <div id="best-model-row" class="two-col" style="margin-bottom:14px"></div>
+        <div class="card">
+          <div class="table-wrap" id="tbl-survival"></div>
+        </div>
+      </section>
+
+      <!-- ══ DATA INGESTION ══ -->
+      <section id="sec-ingestion" class="section">
+        <div class="sec-hdr"><div>
+          <h2 class="sec-title">Data Ingestion &amp; Preprocessing</h2>
+          <p class="sec-sub">Raw dataset dimensions, cleaning outcomes, and 1-minute aggregation summary</p>
+        </div></div>
+        <div id="placeholder-ingestion" class="placeholder-state">
+          <div class="ph-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="ph-title">No analysis run yet</div>
+          <div class="ph-sub">Run the pipeline to see dataset dimensions, cleaning outcomes, and aggregation results.</div>
+        </div>
+        <div class="kpi-row" id="kpi-ingestion"></div>
+        <div class="section-divider-label">1-Minute Aggregation</div>
+        <div class="kpi-row" id="kpi-aggregation"></div>
+      </section>
+
+      <!-- ══ EDA ══ -->
+      <section id="sec-eda" class="section">
+        <div class="sec-hdr"><div>
+          <h2 class="sec-title">Exploratory Data Analysis</h2>
+          <p class="sec-sub">Regime profiling (Normal vs Peak vs Overall) and feature correlation matrices</p>
+        </div></div>
+        <div id="placeholder-eda" class="placeholder-state">
+          <div class="ph-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+          <div class="ph-title">No analysis run yet</div>
+          <div class="ph-sub">Run the pipeline to see regime comparisons, summary statistics, and correlation matrices.</div>
+        </div>
+        <div id="eda-content" style="display:none">
+        <div class="card">
+          <div class="card-hdr"><span class="card-hdr-title">E-Commerce — Regime Comparison</span><span class="badge badge-blue">Primary</span></div>
+          <div class="table-wrap" id="tbl-ec-regimes"></div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="card-hdr"><span class="card-hdr-title">Web Server — Regime Comparison</span><span class="badge badge-purple">Secondary</span></div>
+          <div class="table-wrap" id="tbl-ws-regimes"></div>
+        </div>
+        <div class="two-col" style="margin-top:14px">
+          <div class="card">
+            <div class="card-hdr"><span class="card-hdr-title">E-Commerce Correlation Matrix</span></div>
+            <div class="table-wrap" id="tbl-ec-corr"></div>
+          </div>
+          <div class="card">
+            <div class="card-hdr"><span class="card-hdr-title">Web Server Correlation Matrix</span></div>
+            <div class="table-wrap" id="tbl-ws-corr"></div>
+          </div>
+        </div>
+        </div><!-- /eda-content -->
+      </section>
+
+      <!-- ══ DISPERSION ══ -->
+      <section id="sec-dispersion" class="section">
+        <div class="sec-hdr"><div>
+          <h2 class="sec-title">Overdispersion Analysis</h2>
+          <p class="sec-sub">Dispersion Index = Variance / Mean. Index &gt; 1.2 means Poisson is invalid — use Negative Binomial. This directly affects which model you should use for capacity planning.</p>
+        </div></div>
+        <div id="placeholder-dispersion" class="placeholder-state">
+          <div class="ph-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+          <div class="ph-title">No analysis run yet</div>
+          <div class="ph-sub">Run the pipeline to assess whether Poisson or Negative Binomial is the correct model for your traffic.</div>
+        </div>
+        <div id="dispersion-content" style="display:none">
+        <div class="card">
+          <div class="table-wrap" id="tbl-dispersion"></div>
+        </div>
+        </div>
+      </section>
+
+      <!-- ══ DISTRIBUTIONS ══ -->
+      <section id="sec-dist" class="section">
+        <div class="sec-hdr"><div>
+          <h2 class="sec-title">Distribution Fitting Results</h2>
+          <p class="sec-sub">MLE-fitted models ranked by AIC. Lower AIC = better fit. The verdict column tells you exactly what each result means for capacity planning.</p>
+        </div></div>
+        <div id="placeholder-dist" class="placeholder-state">
+          <div class="ph-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 20h20M5 20V10l7-7 7 7v10"/></svg></div>
+          <div class="ph-title">No analysis run yet</div>
+          <div class="ph-sub">Run the pipeline to fit Poisson, Negative Binomial, Log-Normal, Gamma, Weibull, and Exponential models.</div>
+        </div>
+        <div id="dist-content" style="display:none">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="seg-ctrl" id="dist-seg">
+              <button class="seg active" onclick="switchDist('ec_all',this)">EC · All</button>
+              <button class="seg" onclick="switchDist('ec_normal',this)">EC · Normal</button>
+              <button class="seg" onclick="switchDist('ec_peak',this)">EC · Peak</button>
+              <button class="seg" onclick="switchDist('ws_all',this)">WS · All</button>
+              <button class="seg" onclick="switchDist('ws_normal',this)">WS · Normal</button>
+              <button class="seg" onclick="switchDist('ws_peak',this)">WS · Peak</button>
+            </div>
+          </div>
+          <div class="table-wrap" id="tbl-dist"></div>
+        </div>
+        </div><!-- /dist-content -->
+      </section>
+
+      <!-- ══ CHARTS ══ -->
+      <section id="sec-charts" class="section">
+        <div class="sec-hdr"><div>
+          <h2 class="sec-title">Diagnostic Charts</h2>
+          <p class="sec-sub">Traffic time series, rolling statistics, distribution overlays, Q-Q plots. Click any chart to enlarge.</p>
+        </div></div>
+        <div id="placeholder-charts" class="placeholder-state">
+          <div class="ph-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+          <div class="ph-title">No analysis run yet</div>
+          <div class="ph-sub">Run the pipeline to generate all 12 diagnostic charts.</div>
+        </div>
+        <div id="charts-content" style="display:none">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="seg-ctrl">
+              <button class="seg active" onclick="switchCharts('ec',this)">E-Commerce</button>
+              <button class="seg" onclick="switchCharts('ws',this)">Web Server</button>
+            </div>
+          </div>
+          <div id="charts-ec" class="chart-group">
+            <div class="chart-grid">
+              <div class="chart-tile"><div class="ct-hdr"><span>Traffic Volume Over Time</span><span class="ct-tag">Time Series</span></div><img id="fig-ec-traffic" class="chart-img"/></div>
+              <div class="chart-tile"><div class="ct-hdr"><span>Rolling Mean &amp; Volatility</span><span class="ct-tag">15-min Window</span></div><img id="fig-ec-rolling" class="chart-img"/></div>
+              <div class="chart-tile"><div class="ct-hdr"><span>Temporal Patterns</span><span class="ct-tag">Hour / Day of Week</span></div><img id="fig-ec-temporal" class="chart-img"/></div>
+              <div class="chart-tile"><div class="ct-hdr"><span>Distribution Fits — All Traffic</span><span class="ct-tag">Density Overlay</span></div><img id="fig-ec-dist-all" class="chart-img"/></div>
+              <div class="chart-tile"><div class="ct-hdr"><span>Distribution Fits — Peak Traffic</span><span class="ct-tag">≥90th Pctl</span></div><img id="fig-ec-dist-peak" class="chart-img"/></div>
+              <div class="chart-tile"><div class="ct-hdr"><span>Q-Q Probability Plots</span><span class="ct-tag">Goodness of Fit</span></div><img id="fig-ec-qq" class="chart-img"/></div>
+            </div>
+          </div>
+          <div id="charts-ws" class="chart-group" style="display:none">
+            <div class="chart-grid">
+              <div class="chart-tile"><div class="ct-hdr"><span>Traffic Volume Over Time</span><span class="ct-tag">Time Series</span></div><img id="fig-ws-traffic" class="chart-img"/></div>
+              <div class="chart-tile"><div class="ct-hdr"><span>Rolling Mean &amp; Volatility</span><span class="ct-tag">15-min Window</span></div><img id="fig-ws-rolling" class="chart-img"/></div>
+              <div class="chart-tile"><div class="ct-hdr"><span>Temporal Patterns</span><span class="ct-tag">Hour / Day of Week</span></div><img id="fig-ws-temporal" class="chart-img"/></div>
+              <div class="chart-tile"><div class="ct-hdr"><span>Distribution Fits — All Traffic</span><span class="ct-tag">Density Overlay</span></div><img id="fig-ws-dist-all" class="chart-img"/></div>
+              <div class="chart-tile"><div class="ct-hdr"><span>Distribution Fits — Peak Traffic</span><span class="ct-tag">≥90th Pctl</span></div><img id="fig-ws-dist-peak" class="chart-img"/></div>
+              <div class="chart-tile"><div class="ct-hdr"><span>Q-Q Probability Plots</span><span class="ct-tag">Goodness of Fit</span></div><img id="fig-ws-qq" class="chart-img"/></div>
+            </div>
+          </div>
+        </div>
+        </div><!-- /charts-content -->
+      </section>
+
+    </div><!-- /results-container -->
+
+    <footer class="page-footer">
+      TrafficStat · Statistical Modeling of High-Volume Website Traffic · SRE Capacity Planning · Probability Distribution Fitting
+    </footer>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lb-close" onclick="closeLightbox()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <img id="lightbox-img" src="" alt=""/>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
